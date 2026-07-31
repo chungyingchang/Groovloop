@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Groovloop — K-pop Cover Dance 練習工具</title>
+<style>
+  :root {
+    --bg: #12121a;
+    --panel: #1c1c28;
+    --accent: #ff5da2;
+    --accent-2: #7c5cff;
+    --text: #f2f2f7;
+    --muted: #9a9ab0;
+    --border: #2e2e40;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: linear-gradient(160deg, #14141d, #1a1424);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .lang-switch {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 20;
+  }
+  .lang-toggle-btn {
+    background: #1c1c28;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.35);
+  }
+  .lang-toggle-btn .globe {
+    font-size: 14px;
+  }
+  .lang-toggle-btn .lang-current-label {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .lang-toggle-btn .caret {
+    font-size: 10px;
+    color: var(--muted);
+    transition: transform .15s;
+  }
+  .lang-toggle-btn.open .caret {
+    transform: rotate(180deg);
+  }
+  .lang-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: #1c1c28;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    display: none;
+    flex-direction: column;
+    min-width: 120px;
+    z-index: 10;
+    box-shadow: 0 8px 20px rgba(0,0,0,.4);
+  }
+  .lang-menu.open {
+    display: flex;
+  }
+  .lang-menu button {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    text-align: left;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 6px;
+  }
+  .lang-menu button:hover {
+    background: #2a2a3a;
+    color: var(--text);
+  }
+  .lang-menu button.active {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  header h1 {
+    font-size: 26px;
+    margin: 0 0 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header p {
+    color: var(--muted);
+    margin: 0;
+    font-size: 14px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .url-row {
+    display: flex;
+    gap: 8px;
+  }
+  input[type="text"], input[type="number"] {
+    background: #0f0f16;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  .url-row input {
+    flex: 1;
+  }
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  button:hover { opacity: .85; }
+  button.secondary {
+    background: #2a2a3a;
+    color: var(--text);
+  }
+  button:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+  }
+  .player-stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform .2s, aspect-ratio .2s;
+    margin: 0 auto;
+  }
+  .player-stage.vertical {
+    aspect-ratio: 9 / 16;
+    max-width: 480px;
+  }
+  .player-stage.mirrored {
+    transform: scaleX(-1);
+  }
+  .player-stage.instagram-mode {
+    aspect-ratio: auto;
+    height: auto;
+    min-height: 200px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    background: transparent;
+    padding: 8px 0;
+    overflow: visible;
+  }
+  #ytContainer {
+    width: 100%;
+    height: 100%;
+  }
+  #player {
+    width: 100%;
+    height: 100%;
+  }
+  .placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .controls-flex {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .controls-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  @media (max-width: 640px) {
+    .controls-flex { flex-direction: column; }
+  }
+  .control-group h3 {
+    margin: 0 0 12px;
+    padding-left: 10px;
+    border-left: 3px solid var(--accent);
+    font-size: 15px;
+    line-height: 1.3;
+    color: var(--text);
+    font-weight: 700;
+    letter-spacing: .01em;
+  }
+  .rate-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .rate-buttons button {
+    background: #2a2a3a;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  .rate-buttons button.active {
+    background: var(--accent);
+  }
+  .custom-rate-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .custom-rate-row input {
+    width: 100%;
+    flex: 1;
+  }
+  .custom-rate-row button {
+    flex-shrink: 0;
+  }
+  .ab-row {
+    margin-bottom: 10px;
+  }
+  .ab-row label {
+    display: block;
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .ab-row-inputs {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .ab-row input[type="number"] {
+    width: 80px;
+  }
+  .ab-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .status-bar b { color: var(--text); }
+  .mirror-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: #2a2a3a;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .switch.on { background: var(--accent); }
+  .switch .knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left .2s;
+  }
+  .switch.on .knob { left: 23px; }
+  .note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .source-tag {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .source-tag .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 11px;
+    color: #fff;
+  }
+  .source-tag .badge.youtube { background: #ff2d2d; }
+  .source-tag .badge.instagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+  #igContainer {
+    display: none;
+    width: 100%;
+  }
+  .control-group .disable-target {
+    transition: opacity .15s;
+  }
+  .control-group.unsupported .disable-target {
+    opacity: .35;
+    pointer-events: none;
+  }
+  .note.warn {
+    color: #ffb454;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="lang-switch" id="langSwitch">
+      <button type="button" class="lang-toggle-btn" id="langToggleBtn">
+        <span class="globe">🌐</span><span>Language</span><span class="lang-current-label" id="langCurrentLabel">繁中</span><span class="caret">▾</span>
+      </button>
+      <div class="lang-menu" id="langMenu">
+        <button type="button" data-lang="zh-Hant">繁中</button>
+        <button type="button" data-lang="zh-Hans">简中</button>
+        <button type="button" data-lang="en">EN</button>
+        <button type="button" data-lang="ja">日本語</button>
+        <button type="button" data-lang="ko">한국어</button>
+      </div>
+    </div>
+    <h1>Groovloop</h1>
+    <p data-i18n="subtitle">貼上 YouTube 連結,練你的 cover dance —— 變速 / AB 迴圈 / 鏡像</p>
+  </header>
+
+  <div class="card">
+    <div class="url-row">
+      <input type="text" id="urlInput" data-i18n-placeholder="urlPlaceholder" placeholder="貼上 YouTube 連結,例如 https://www.youtube.com/watch?v=xxxxxxxxxxx">
+      <button id="loadBtn" data-i18n="loadBtn">載入</button>
+    </div>
+    <div class="hint" id="urlHint"></div>
+    <div class="source-tag" id="sourceTag">
+      <span data-i18n="sourceLabel">來源:</span><span class="badge" id="sourceBadge"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="player-stage" id="playerStage">
+      <div class="placeholder" id="placeholder">尚未載入影片</div>
+      <div id="ytContainer"><div id="player"></div></div>
+      <div id="igContainer"></div>
+    </div>
+    <div class="hint" id="igOpenLink" style="display:none; text-align:center; margin-top:10px;">
+      <span data-i18n="igOpenLinkText">Instagram 嵌入畫面若無法顯示,可以</span>
+      <a id="igOpenLinkA" href="#" target="_blank" rel="noopener" style="color: var(--accent-2);" data-i18n="igOpenLinkA">直接在 Instagram 開啟</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="controls-flex">
+      <div class="controls-col">
+        <div class="control-group" id="rateGroup">
+          <h3 data-i18n="rateTitle">變速播放</h3>
+          <div class="disable-target">
+            <div class="rate-buttons" id="rateButtons">
+              <span class="hint" data-i18n="rateHint">載入影片後顯示可用速度</span>
+            </div>
+            <div class="custom-rate-row">
+              <input type="number" id="customRateInput" min="0.1" max="2" step="0.05" data-i18n-placeholder="customPlaceholder" placeholder="輸入倍速,如 0.65">
+              <button class="secondary" id="customRateApply" data-i18n="customApply">套用</button>
+            </div>
+          </div>
+          <div class="note" id="rateNote">部分影片由上傳者限制可用速度範圍,音調不會補償。</div>
+        </div>
+
+        <div class="control-group">
+          <h3 data-i18n="mirrorTitle">左右鏡像</h3>
+          <div class="mirror-toggle">
+            <div class="switch" id="mirrorSwitch"><div class="knob"></div></div>
+            <span id="mirrorLabel">關閉</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-col">
+        <div class="control-group" id="abGroup">
+          <h3 data-i18n="abTitle">自訂區間循環</h3>
+          <div class="note" data-i18n="abHelpText" style="margin-top: -4px; margin-bottom: 10px;">重複播放選取區間</div>
+          <div class="disable-target">
+            <div class="ab-row">
+              <label data-i18n="loopStartLabel">起點 (A)</label>
+              <div class="ab-row-inputs">
+                <input type="number" id="pointA" min="0" step="0.1" data-i18n-placeholder="secondsPlaceholder" placeholder="秒">
+                <button class="secondary" id="markA" data-i18n="markTime">標記目前時間</button>
+              </div>
+            </div>
+            <div class="ab-row">
+              <label data-i18n="loopEndLabel">終點 (B)</label>
+              <div class="ab-row-inputs">
+                <input type="number" id="pointB" min="0" step="0.1" data-i18n-placeholder="secondsPlaceholder" placeholder="秒">
+                <button class="secondary" id="markB" data-i18n="markTime">標記目前時間</button>
+              </div>
+            </div>
+            <div class="ab-actions">
+              <button id="loopToggle" disabled>開始迴圈</button>
+              <button class="secondary" id="clearAB" data-i18n="clearBtn">清除</button>
+            </div>
+          </div>
+          <div class="note" id="abNote" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <span><span data-i18n="statCurrentLabel">目前時間:</span> <b id="statCurrent">--</b></span>
+      <span><span data-i18n="statRateLabel">目前速度:</span> <b id="statRate">--</b></span>
+      <span><span data-i18n="statLoopLabel">AB 迴圈:</span> <b id="statLoop">關閉</b></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- 多語系 ----------
+  var SUPPORTED_LANGS = ['zh-Hant', 'zh-Hans', 'en', 'ja', 'ko'];
+
+  var translations = {
+    subtitle: {
+      'zh-Hant': '貼上 YouTube 連結,練你的 cover dance —— 變速 / AB 迴圈 / 鏡像',
+      'zh-Hans': '粘贴 YouTube 链接,练习你的 cover dance —— 变速 / AB 循环 / 镜像',
+      'en': 'Paste a YouTube link to practice your cover dance — speed control / A-B loop / mirror',
+      'ja': 'YouTubeのリンクを貼り付けて、カバーダンスを練習しよう —— 速度調整 / ABループ / ミラー',
+      'ko': 'YouTube 링크를 붙여넣고 커버댄스를 연습하세요 —— 배속 / AB 루프 / 미러'
+    },
+    urlPlaceholder: {
+      'zh-Hant': '貼上 YouTube 連結,例如 https://www.youtube.com/watch?v=xxxxxxxxxxx',
+      'zh-Hans': '粘贴 YouTube 链接,例如 https://www.youtube.com/watch?v=xxxxxxxxxxx',
+      'en': 'Paste a YouTube link, e.g. https://www.youtube.com/watch?v=xxxxxxxxxxx',
+      'ja': 'YouTubeのリンクを貼り付けてください。例:https://www.youtube.com/watch?v=xxxxxxxxxxx',
+      'ko': 'YouTube 링크를 붙여넣으세요. 예: https://www.youtube.com/watch?v=xxxxxxxxxxx'
+    },
+    loadBtn: {
+      'zh-Hant': '載入', 'zh-Hans': '载入', 'en': 'Load', 'ja': '読み込む', 'ko': '불러오기'
+    },
+    sourceLabel: {
+      'zh-Hant': '來源:', 'zh-Hans': '来源:', 'en': 'Source:', 'ja': 'ソース:', 'ko': '소스:'
+    },
+    placeholderText: {
+      'zh-Hant': '尚未載入影片',
+      'zh-Hans': '尚未载入影片',
+      'en': 'No video loaded yet',
+      'ja': 'まだ動画が読み込まれていません',
+      'ko': '아직 동영상을 불러오지 않았습니다'
+    },
+    igOpenLinkText: {
+      'zh-Hant': 'Instagram 嵌入畫面若無法顯示,可以',
+      'zh-Hans': '如果 Instagram 嵌入画面无法显示,可以',
+      'en': "If the Instagram embed doesn't show, you can",
+      'ja': 'Instagramの埋め込みが表示されない場合は、',
+      'ko': 'Instagram 임베드가 표시되지 않으면'
+    },
+    igOpenLinkA: {
+      'zh-Hant': '直接在 Instagram 開啟',
+      'zh-Hans': '直接在 Instagram 打开',
+      'en': 'open it directly on Instagram',
+      'ja': 'Instagramで直接開く',
+      'ko': 'Instagram에서 직접 열기'
+    },
+    rateTitle: {
+      'zh-Hant': '變速播放', 'zh-Hans': '变速播放', 'en': 'Playback Speed', 'ja': '再生速度', 'ko': '재생 속도'
+    },
+    rateHint: {
+      'zh-Hant': '載入影片後顯示可用速度',
+      'zh-Hans': '载入影片后显示可用速度',
+      'en': 'Available speeds appear after loading a video',
+      'ja': '動画を読み込むと利用可能な速度が表示されます',
+      'ko': '동영상을 불러오면 사용 가능한 속도가 표시됩니다'
+    },
+    customPlaceholder: {
+      'zh-Hant': '輸入倍速,如 0.65',
+      'zh-Hans': '输入倍速,如 0.65',
+      'en': 'Enter a rate, e.g. 0.65',
+      'ja': '倍速を入力(例:0.65)',
+      'ko': '배속 입력(예: 0.65)'
+    },
+    customApply: {
+      'zh-Hant': '套用', 'zh-Hans': '应用', 'en': 'Apply', 'ja': '適用', 'ko': '적용'
+    },
+    rateNoteDefault: {
+      'zh-Hant': '部分影片由上傳者限制可用速度範圍,音調不會補償。自訂倍速若該影片不支援,會自動採用最接近的可用速度。',
+      'zh-Hans': '部分影片由上传者限制可用速度范围,音调不会补偿。自定倍速若该影片不支持,会自动采用最接近的可用速度。',
+      'en': "Some videos have their speed range limited by the uploader, and pitch isn't corrected. If a custom rate isn't supported, YouTube snaps to the closest available speed.",
+      'ja': '動画によってはアップロード者が速度範囲を制限している場合があり、ピッチ補正はされません。カスタム倍速が対応していない場合、最も近い利用可能な速度に自動調整されます。',
+      'ko': '일부 동영상은 업로더가 속도 범위를 제한할 수 있으며, 음정은 보정되지 않습니다. 사용자 지정 배속이 지원되지 않으면 가장 가까운 사용 가능한 속도로 자동 조정됩니다.'
+    },
+    abTitle: {
+      'zh-Hant': '自訂區間循環',
+      'zh-Hans': '自定义区间循环',
+      'en': 'Custom Loop',
+      'ja': '指定区間リピート',
+      'ko': '구간 반복'
+    },
+    abHelpText: {
+      'zh-Hant': '重複播放選取區間',
+      'zh-Hans': '重复播放选中区间',
+      'en': 'Repeat selected section',
+      'ja': '選択した区間を繰り返し再生',
+      'ko': '선택한 구간 반복 재생'
+    },
+    secondsPlaceholder: {
+      'zh-Hant': '秒', 'zh-Hans': '秒', 'en': 'sec', 'ja': '秒', 'ko': '초'
+    },
+    loopStartLabel: {
+      'zh-Hant': '起點 (A)',
+      'zh-Hans': '起点 (A)',
+      'en': 'Start (A)',
+      'ja': '始点 (A)',
+      'ko': '시작 (A)'
+    },
+    loopEndLabel: {
+      'zh-Hant': '終點 (B)',
+      'zh-Hans': '终点 (B)',
+      'en': 'End (B)',
+      'ja': '終点 (B)',
+      'ko': '종료 (B)'
+    },
+    markTime: {
+      'zh-Hant': '標記目前時間',
+      'zh-Hans': '标记目前时间',
+      'en': 'Mark current time',
+      'ja': '現在の時間をマーク',
+      'ko': '현재 시간 표시'
+    },
+    loopStart: {
+      'zh-Hant': '開始迴圈', 'zh-Hans': '开始循环', 'en': 'Start Loop', 'ja': 'ループ開始', 'ko': '루프 시작'
+    },
+    loopStop: {
+      'zh-Hant': '停止迴圈', 'zh-Hans': '停止循环', 'en': 'Stop Loop', 'ja': 'ループ停止', 'ko': '루프 정지'
+    },
+    clearBtn: {
+      'zh-Hant': '清除', 'zh-Hans': '清除', 'en': 'Clear', 'ja': 'クリア', 'ko': '지우기'
+    },
+    mirrorTitle: {
+      'zh-Hant': '左右鏡像', 'zh-Hans': '左右镜像', 'en': 'Mirror', 'ja': '左右反転', 'ko': '좌우 반전'
+    },
+    mirrorOff: {
+      'zh-Hant': '關閉', 'zh-Hans': '关闭', 'en': 'Off', 'ja': 'オフ', 'ko': '꺼짐'
+    },
+    mirrorOn: {
+      'zh-Hant': '開啟', 'zh-Hans': '开启', 'en': 'On', 'ja': 'オン', 'ko': '켜짐'
+    },
+    statCurrentLabel: {
+      'zh-Hant': '目前時間:', 'zh-Hans': '目前时间:', 'en': 'Current time:', 'ja': '現在の時間:', 'ko': '현재 시간:'
+    },
+    statRateLabel: {
+      'zh-Hant': '目前速度:', 'zh-Hans': '目前速度:', 'en': 'Current speed:', 'ja': '現在の速度:', 'ko': '현재 속도:'
+    },
+    statLoopLabel: {
+      'zh-Hant': 'AB 迴圈:', 'zh-Hans': 'AB 循环:', 'en': 'A-B loop:', 'ja': 'ABループ:', 'ko': 'AB 루프:'
+    },
+    errInvalidInstagram: {
+      'zh-Hant': '無法解析這個 Instagram 連結,請確認是否為 Reel/貼文連結。',
+      'zh-Hans': '无法解析这个 Instagram 链接,请确认是否为 Reel/帖子链接。',
+      'en': "Couldn't parse this Instagram link. Please check it's a Reel/post link.",
+      'ja': 'このInstagramリンクを解析できませんでした。Reel/投稿のリンクか確認してください。',
+      'ko': '이 Instagram 링크를 분석할 수 없습니다. Reel/게시물 링크인지 확인해 주세요.'
+    },
+    errInvalidYoutube: {
+      'zh-Hant': '無法解析這個連結,請確認格式是否為 YouTube 影片連結。',
+      'zh-Hans': '无法解析这个链接,请确认格式是否为 YouTube 视频链接。',
+      'en': "Couldn't parse this link. Please check it's a valid YouTube video link.",
+      'ja': 'このリンクを解析できませんでした。YouTube動画のリンク形式か確認してください。',
+      'ko': '이 링크를 분석할 수 없습니다. YouTube 동영상 링크 형식인지 확인해 주세요.'
+    },
+    errUnknownSource: {
+      'zh-Hant': '無法辨識這個連結,目前支援 YouTube 與 Instagram Reels/貼文連結。',
+      'zh-Hans': '无法识别这个链接,目前支持 YouTube 与 Instagram Reels/帖子链接。',
+      'en': 'Couldn\'t recognize this link. Currently supports YouTube and Instagram Reels/post links.',
+      'ja': 'このリンクを認識できませんでした。現在対応しているのはYouTubeとInstagramのReel/投稿リンクです。',
+      'ko': '이 링크를 인식할 수 없습니다. 현재 YouTube와 Instagram Reels/게시물 링크를 지원합니다.'
+    },
+    ytApiNotReady: {
+      'zh-Hant': 'YouTube API 尚未就緒,請稍後再試一次。',
+      'zh-Hans': 'YouTube API 尚未就绪,请稍后再试一次。',
+      'en': "YouTube API isn't ready yet. Please try again in a moment.",
+      'ja': 'YouTube APIの準備がまだ整っていません。しばらくしてからもう一度お試しください。',
+      'ko': 'YouTube API가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.'
+    },
+    igControlReason: {
+      'zh-Hant': 'Instagram 嵌入不提供播放控制 API,此功能僅支援 YouTube。',
+      'zh-Hans': 'Instagram 嵌入不提供播放控制 API,此功能仅支持 YouTube。',
+      'en': "Instagram embeds don't provide a playback control API. This feature only supports YouTube.",
+      'ja': 'Instagramの埋め込みには再生制御APIがないため、この機能はYouTubeのみ対応しています。',
+      'ko': 'Instagram 임베드는 재생 제어 API를 제공하지 않습니다. 이 기능은 YouTube에서만 지원됩니다.'
+    },
+    igViewOnInstagram: {
+      'zh-Hant': '在 Instagram 上查看這則 Reel',
+      'zh-Hans': '在 Instagram 上查看这条 Reel',
+      'en': 'View this Reel on Instagram',
+      'ja': 'InstagramでこのReelを見る',
+      'ko': 'Instagram에서 이 Reel 보기'
+    },
+    errVideoIdInvalid: {
+      'zh-Hant': '影片 ID 無效,請確認網址是否正確。',
+      'zh-Hans': '视频 ID 无效,请确认网址是否正确。',
+      'en': 'Invalid video ID. Please check the URL is correct.',
+      'ja': '動画IDが無効です。URLが正しいか確認してください。',
+      'ko': '동영상 ID가 유효하지 않습니다. URL이 올바른지 확인해 주세요.'
+    },
+    errHtml5Unplayable: {
+      'zh-Hant': '這支影片無法在 HTML5 播放器上播放。',
+      'zh-Hans': '这支影片无法在 HTML5 播放器上播放。',
+      'en': "This video can't be played in the HTML5 player.",
+      'ja': 'この動画はHTML5プレーヤーで再生できません。',
+      'ko': '이 동영상은 HTML5 플레이어에서 재생할 수 없습니다.'
+    },
+    errVideoNotFound: {
+      'zh-Hant': '找不到這支影片,可能已被刪除或設為不公開。',
+      'zh-Hans': '找不到这支影片,可能已被删除或设为不公开。',
+      'en': "This video couldn't be found. It may have been deleted or set to private.",
+      'ja': 'この動画が見つかりません。削除されたか非公開に設定されている可能性があります。',
+      'ko': '이 동영상을 찾을 수 없습니다. 삭제되었거나 비공개로 설정되었을 수 있습니다.'
+    },
+    errEmbedDisabled: {
+      'zh-Hant': '上傳者關閉了「允許在其他網站嵌入」的權限,這支影片無法用嵌入播放器播放。',
+      'zh-Hans': '上传者关闭了"允许在其他网站嵌入"的权限,这支影片无法用嵌入播放器播放。',
+      'en': "The uploader has disabled embedding on other websites, so this video can't be played in an embedded player.",
+      'ja': 'アップロード者が「他のウェブサイトへの埋め込み」を許可していないため、この動画は埋め込みプレーヤーで再生できません。',
+      'ko': '업로더가 다른 웹사이트에 퍼가기를 허용하지 않아 이 동영상은 임베드 플레이어에서 재생할 수 없습니다.'
+    },
+    errUnknownPlayback: {
+      'zh-Hant': '播放發生未知錯誤 (代碼 {code})',
+      'zh-Hans': '播放发生未知错误(代码 {code})',
+      'en': 'An unknown playback error occurred (code {code})',
+      'ja': '不明な再生エラーが発生しました(コード {code})',
+      'ko': '알 수 없는 재생 오류가 발생했습니다 (코드 {code})'
+    },
+    loopStatusOn: {
+      'zh-Hant': '開啟 ({a}s – {b}s)',
+      'zh-Hans': '开启 ({a}s – {b}s)',
+      'en': 'On ({a}s – {b}s)',
+      'ja': 'オン ({a}s – {b}s)',
+      'ko': '켜짐 ({a}s – {b}s)'
+    }
+  };
+
+  var currentLang = (function () {
+    try {
+      var saved = localStorage.getItem('groovloop_lang');
+      if (saved && SUPPORTED_LANGS.indexOf(saved) !== -1) return saved;
+    } catch (e) {}
+    var nav = (navigator.language || 'zh-Hant');
+    if (/^zh-(TW|HK|MO|Hant)/i.test(nav)) return 'zh-Hant';
+    if (/^zh/i.test(nav)) return 'zh-Hans';
+    if (/^ja/i.test(nav)) return 'ja';
+    if (/^ko/i.test(nav)) return 'ko';
+    if (/^en/i.test(nav)) return 'en';
+    return 'zh-Hant';
+  })();
+
+  function t(key, params) {
+    var entry = translations[key];
+    var str = (entry && (entry[currentLang] || entry['zh-Hant'])) || key;
+    if (params) {
+      Object.keys(params).forEach(function (p) {
+        str = str.split('{' + p + '}').join(params[p]);
+      });
+    }
+    return str;
+  }
+
+  // 記住需要在切換語言時重新渲染的動態狀態
+  // 預設值對應初始 HTML 呈現的狀態(三個功能都可用、備註都是預設文字)
+  var lastCaps = { rate: true, loop: true };
+  var lastUrlHintKey = null;
+  var lastUrlHintParams = null;
+  var lastErrorCode = null;
+
+  function applyStaticTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
+      el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+    });
+  }
+
+  function applyLanguage(lang) {
+    if (SUPPORTED_LANGS.indexOf(lang) === -1) return;
+    currentLang = lang;
+    try { localStorage.setItem('groovloop_lang', lang); } catch (e) {}
+    document.documentElement.lang = lang;
+
+    document.querySelectorAll('#langMenu button').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+    });
+    langCurrentLabel.textContent = LANG_LABELS[lang] || lang;
+
+    applyStaticTranslations();
+
+    // 重新渲染會隨狀態變化、不能只靠 data-i18n 靜態套用的文字
+    mirrorLabel.textContent = t(mirrored ? 'mirrorOn' : 'mirrorOff');
+    loopToggleBtn.textContent = t(isLooping ? 'loopStop' : 'loopStart');
+    statLoop.textContent = isLooping
+      ? t('loopStatusOn', { a: pointAInput.value, b: pointBInput.value })
+      : t('mirrorOff');
+
+    if (!player) {
+      placeholder.textContent = t('placeholderText');
+    } else if (lastErrorCode !== null) {
+      var errKey = ERROR_MESSAGE_KEYS[lastErrorCode];
+      var msg = errKey ? t(errKey) : t('errUnknownPlayback', { code: lastErrorCode });
+      placeholder.textContent = msg;
+      urlHint.textContent = msg;
+    }
+
+    if (lastCaps) setCapabilities(lastCaps);
+    if (lastUrlHintKey) setUrlHint(lastUrlHintKey, lastUrlHintParams);
+  }
+
+  function setUrlHint(key, params) {
+    lastUrlHintKey = key;
+    lastUrlHintParams = params || null;
+    urlHint.textContent = key ? t(key, params) : '';
+  }
+
+  var LANG_LABELS = {
+    'zh-Hant': '繁中', 'zh-Hans': '简中', 'en': 'EN', 'ja': '日本語', 'ko': '한국어'
+  };
+  var langToggleBtn = document.getElementById('langToggleBtn');
+  var langMenu = document.getElementById('langMenu');
+  var langCurrentLabel = document.getElementById('langCurrentLabel');
+
+  function closeLangMenu() {
+    langMenu.classList.remove('open');
+    langToggleBtn.classList.remove('open');
+  }
+
+  langToggleBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var isOpen = langMenu.classList.toggle('open');
+    langToggleBtn.classList.toggle('open', isOpen);
+  });
+
+  langMenu.addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-lang]');
+    if (btn) {
+      applyLanguage(btn.getAttribute('data-lang'));
+      closeLangMenu();
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#langSwitch')) closeLangMenu();
+  });
+
+  // ---------- YouTube IFrame API 載入 ----------
+  var tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.head.appendChild(tag);
+
+  // ---------- Instagram embed.js 載入 ----------
+  // Instagram 官方嵌入機制是 blockquote + embed.js,而不是直接塞一個 iframe 網址,
+  // 後者在近年很常直接開天窗(空白畫面)。
+  var igTag = document.createElement('script');
+  igTag.src = 'https://www.instagram.com/embed.js';
+  igTag.async = true;
+  igTag.onload = function () {
+    // 腳本載入完成時,把目前已經插入 DOM 但還沒被渲染的 blockquote 處理掉
+    if (window.instgrm && window.instgrm.Embeds) {
+      window.instgrm.Embeds.process();
+    }
+  };
+  document.head.appendChild(igTag);
+
+  var player = null;
+  var loopInterval = null;
+  var isLooping = false;
+  var pollHandle = null;
+
+  function onYouTubeIframeAPIReady() {
+    // API 就緒,等使用者貼連結後才實際建立 player
+    window.__ytReady = true;
+  }
+  window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+
+  // ---------- 解析 YouTube 連結取得 video ID ----------
+  function extractVideoId(url) {
+    try {
+      var patterns = [
+        /(?:youtube\.com\/watch\?v=|youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/
+      ];
+      for (var i = 0; i < patterns.length; i++) {
+        var m = url.match(patterns[i]);
+        if (m && m[1]) return m[1];
+      }
+      // 也允許直接貼 11 碼 ID
+      if (/^[a-zA-Z0-9_-]{11}$/.test(url.trim())) return url.trim();
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ---------- 解析 Instagram 連結取得 shortcode ----------
+  function extractInstagramShortcode(url) {
+    try {
+      var m = url.match(/instagram\.com\/(?:reel|p|tv)\/([a-zA-Z0-9_-]+)/);
+      return m ? m[1] : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ---------- 判斷連結來源 ----------
+  function detectSource(url) {
+    if (/instagram\.com/.test(url)) return 'instagram';
+    if (/(?:youtube\.com|youtu\.be)/.test(url) || /^[a-zA-Z0-9_-]{11}$/.test(url.trim())) return 'youtube';
+    return null;
+  }
+
+  // ---------- DOM 參照 ----------
+  var urlInput = document.getElementById('urlInput');
+  var loadBtn = document.getElementById('loadBtn');
+  var urlHint = document.getElementById('urlHint');
+  var placeholder = document.getElementById('placeholder');
+  var rateButtons = document.getElementById('rateButtons');
+  var pointAInput = document.getElementById('pointA');
+  var pointBInput = document.getElementById('pointB');
+  var markABtn = document.getElementById('markA');
+  var markBBtn = document.getElementById('markB');
+  var loopToggleBtn = document.getElementById('loopToggle');
+  var clearABBtn = document.getElementById('clearAB');
+  var mirrorSwitch = document.getElementById('mirrorSwitch');
+  var mirrorLabel = document.getElementById('mirrorLabel');
+  var playerStage = document.getElementById('playerStage');
+  var statCurrent = document.getElementById('statCurrent');
+  var statRate = document.getElementById('statRate');
+  var statLoop = document.getElementById('statLoop');
+  var sourceTag = document.getElementById('sourceTag');
+  var sourceBadge = document.getElementById('sourceBadge');
+  var ytContainer = document.getElementById('ytContainer');
+  var igContainer = document.getElementById('igContainer');
+  var rateGroup = document.getElementById('rateGroup');
+  var abGroup = document.getElementById('abGroup');
+  var abNote = document.getElementById('abNote');
+  var rateNote = document.getElementById('rateNote');
+  var igOpenLink = document.getElementById('igOpenLink');
+  var igOpenLinkA = document.getElementById('igOpenLinkA');
+
+  // ---------- 載入影片 ----------
+  loadBtn.addEventListener('click', loadVideo);
+  urlInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') loadVideo();
+  });
+
+  function loadVideo() {
+    var raw = urlInput.value;
+    var source = detectSource(raw);
+
+    if (source === 'instagram') {
+      var shortcode = extractInstagramShortcode(raw);
+      if (!shortcode) {
+        setUrlHint('errInvalidInstagram');
+        urlHint.style.color = '#ff6b6b';
+        return;
+      }
+      resetForNewLoad();
+      loadInstagramVideo(shortcode);
+      return;
+    }
+
+    if (source === 'youtube') {
+      var videoId = extractVideoId(raw);
+      if (!videoId) {
+        setUrlHint('errInvalidYoutube');
+        urlHint.style.color = '#ff6b6b';
+        return;
+      }
+      resetForNewLoad();
+      loadYouTubeVideo(videoId, raw);
+      return;
+    }
+
+    setUrlHint('errUnknownSource');
+    urlHint.style.color = '#ff6b6b';
+  }
+
+  function loadYouTubeVideo(videoId, raw) {
+    showSourceTag('youtube');
+    setCapabilities({ rate: true, loop: true });
+
+    ytContainer.style.display = '';
+    igContainer.style.display = 'none';
+    igContainer.innerHTML = '';
+    igOpenLink.style.display = 'none';
+    playerStage.classList.remove('instagram-mode');
+
+    // Shorts 是直式 9:16 影片,切換播放區域比例避免畫面被壓縮成一條
+    var isShorts = /youtube\.com\/shorts\//.test(raw);
+    playerStage.classList.toggle('vertical', isShorts);
+
+    if (!window.__ytReady && typeof YT === 'undefined') {
+      setUrlHint('ytApiNotReady');
+      // 稍後重試
+      setTimeout(function () { loadYouTubeVideo(videoId, raw); }, 500);
+      return;
+    }
+
+    if (player) {
+      player.loadVideoById(videoId);
+    } else {
+      placeholder.style.display = 'none';
+      player = new YT.Player('player', {
+        videoId: videoId,
+        playerVars: {
+          rel: 0,
+          modestbranding: 1
+        },
+        events: {
+          onReady: onPlayerReady,
+          onStateChange: onPlayerStateChange,
+          onError: onPlayerError
+        }
+      });
+    }
+  }
+
+  function loadInstagramVideo(shortcode) {
+    showSourceTag('instagram');
+    setCapabilities({
+      rate: false,
+      loop: false,
+      rateReasonKey: 'igControlReason',
+      loopReasonKey: 'igControlReason'
+    });
+
+    // Instagram 沒有像 YouTube 那樣的 JS 控制介面,只能停止輪詢/暫停既有的 YouTube 播放器
+    if (pollHandle) clearInterval(pollHandle);
+    if (player && typeof player.pauseVideo === 'function') {
+      try { player.pauseVideo(); } catch (e) {}
+    }
+
+    ytContainer.style.display = 'none';
+    playerStage.classList.remove('vertical');
+    playerStage.classList.add('instagram-mode'); // IG 卡片自己決定高度,不強塞 16:9/9:16 框架
+    igContainer.style.display = '';
+    placeholder.style.display = 'none';
+    statCurrent.textContent = '--';
+    statRate.textContent = '--';
+
+    var permalink = 'https://www.instagram.com/reel/' + shortcode + '/';
+
+    // 官方 blockquote 格式(跟你在 IG 貼文點「嵌入」拿到的程式碼同一套),
+    // 交給 embed.js 去渲染成真正的播放卡片。
+    igContainer.innerHTML =
+      '<blockquote class="instagram-media" data-instgrm-permalink="' + permalink + '" ' +
+      'data-instgrm-version="14" style="background:#FFF; border:0; border-radius:12px; margin:0 auto; max-width:400px; min-width:270px; width:100%;">' +
+      '<div style="padding:16px;"><a href="' + permalink + '" target="_blank" rel="noopener" ' +
+      'style="color:#000; text-decoration:none;">' + t('igViewOnInstagram') + '</a></div>' +
+      '</blockquote>';
+
+    // embed.js 可能還沒載入完,或已經載入過(這是第二次以後切換影片),兩種情況都要處理
+    if (window.instgrm && window.instgrm.Embeds) {
+      window.instgrm.Embeds.process();
+    }
+
+    // 保留備用連結,萬一 embed.js 渲染失敗(例如被瀏覽器擴充功能擋掉)使用者還是有路可以看影片
+    igOpenLinkA.href = permalink;
+    igOpenLink.style.display = 'block';
+
+    // Instagram 的 iframe 一開始 height="0",要等它自己內部載入完成後
+    // 用 postMessage 回報實際高度,embed.js 才會把 height 更新。
+    // 如果這個回報一直沒發生(例如內容需要登入、被封鎖),iframe 就會永遠卡在 0 高度、整塊看起來消失。
+    // 這裡加一個保底:等幾秒後如果高度還是 0,強制給它一個看得到的高度,
+    // 讓使用者至少能看到 iframe 裡實際顯示了什麼(例如登入畫面),方便判斷問題。
+    [1500, 3500, 6000].forEach(function (delay) {
+      setTimeout(function () {
+        var frame = igContainer.querySelector('iframe.instagram-media');
+        if (!frame) return;
+        var h = parseInt(frame.getAttribute('height') || '0', 10);
+        if (!h || h < 40) {
+          frame.style.minHeight = '600px';
+          frame.style.height = '600px';
+        }
+      }, delay);
+    });
+  }
+
+  function showSourceTag(source) {
+    sourceTag.style.display = 'flex';
+    sourceBadge.textContent = source === 'instagram' ? 'Instagram' : 'YouTube';
+    sourceBadge.className = 'badge ' + source;
+  }
+
+  function setCapabilities(caps) {
+    lastCaps = caps;
+
+    rateGroup.classList.toggle('unsupported', !caps.rate);
+    rateNote.textContent = caps.rate ? t('rateNoteDefault') : t(caps.rateReasonKey);
+    rateNote.classList.toggle('warn', !caps.rate);
+
+    abGroup.classList.toggle('unsupported', !caps.loop);
+    abNote.style.display = caps.loop ? 'none' : 'block';
+    abNote.textContent = caps.loop ? '' : t(caps.loopReasonKey);
+    abNote.classList.add('warn');
+  }
+
+  function resetForNewLoad() {
+    setUrlHint(null);
+    lastErrorCode = null;
+    placeholder.style.display = 'none';
+    placeholder.textContent = t('placeholderText');
+    stopLoop();
+    pointAInput.value = '';
+    pointBInput.value = '';
+    loopToggleBtn.disabled = true;
+  }
+
+  function onPlayerReady(e) {
+    placeholder.style.display = 'none';
+    buildRateButtons();
+    startPolling();
+  }
+
+  function onPlayerStateChange(e) {
+    // -1 未開始, 5 已緩衝完成(cued), 1 播放中:代表這支影片有效載入成功,
+    // 把可能殘留的錯誤畫面清掉,並依這支新影片重新產生速度選項。
+    if (e.data === -1 || e.data === 5 || e.data === 1) {
+      placeholder.style.display = 'none';
+      lastErrorCode = null;
+      setUrlHint(null);
+      buildRateButtons();
+    }
+  }
+
+  var ERROR_MESSAGE_KEYS = {
+    2: 'errVideoIdInvalid',
+    5: 'errHtml5Unplayable',
+    100: 'errVideoNotFound',
+    101: 'errEmbedDisabled',
+    150: 'errEmbedDisabled'
+  };
+
+  function onPlayerError(e) {
+    lastErrorCode = e.data;
+    var key = ERROR_MESSAGE_KEYS[e.data];
+    var msg = key ? t(key) : t('errUnknownPlayback', { code: e.data });
+    urlHint.textContent = msg;
+    urlHint.style.color = '#ff6b6b';
+    placeholder.style.display = 'flex';
+    placeholder.textContent = msg;
+  }
+
+  // ---------- 變速播放 ----------
+  // 固定清單:0.5 起跳、0.5~1.0 之間多切幾格、最高到 1.5。實際能不能精準套用
+  // 還是取決於 YouTube 該支影片支援的速度,不支援時會自動吸附到最接近的可用速度。
+  var FIXED_RATES = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.5];
+
+  function buildRateButtons() {
+    rateButtons.innerHTML = '';
+    var currentRate = (player && typeof player.getPlaybackRate === 'function') ? player.getPlaybackRate() : 1;
+    FIXED_RATES.forEach(function (r) {
+      var btn = document.createElement('button');
+      btn.textContent = r + 'x';
+      btn.dataset.rate = r;
+      btn.disabled = !player;
+      if (Math.abs(r - currentRate) < 0.001) btn.classList.add('active');
+      btn.addEventListener('click', function () {
+        applyPlaybackRate(r, btn);
+      });
+      rateButtons.appendChild(btn);
+    });
+  }
+
+  function applyPlaybackRate(rate, activeBtn) {
+    if (!player) return;
+    player.setPlaybackRate(rate);
+    Array.prototype.forEach.call(rateButtons.children, function (c) {
+      c.classList.remove('active');
+    });
+    if (activeBtn) activeBtn.classList.add('active');
+  }
+
+  var customRateInput = document.getElementById('customRateInput');
+  var customRateApply = document.getElementById('customRateApply');
+
+  function applyCustomRate() {
+    if (!player) return;
+    var v = parseFloat(customRateInput.value);
+    if (isNaN(v) || v <= 0) return;
+    v = Math.min(Math.max(v, 0.1), 2);
+    var matchBtn = Array.prototype.find.call(rateButtons.children, function (c) {
+      return Math.abs(parseFloat(c.dataset.rate) - v) < 0.001;
+    });
+    applyPlaybackRate(v, matchBtn || null);
+  }
+
+  customRateApply.addEventListener('click', applyCustomRate);
+  customRateInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') applyCustomRate();
+  });
+
+  // ---------- AB 迴圈 ----------
+  markABtn.addEventListener('click', function () {
+    if (!player) return;
+    pointAInput.value = player.getCurrentTime().toFixed(1);
+    updateLoopAvailability();
+  });
+  markBBtn.addEventListener('click', function () {
+    if (!player) return;
+    pointBInput.value = player.getCurrentTime().toFixed(1);
+    updateLoopAvailability();
+  });
+  pointAInput.addEventListener('input', updateLoopAvailability);
+  pointBInput.addEventListener('input', updateLoopAvailability);
+
+  function updateLoopAvailability() {
+    var a = parseFloat(pointAInput.value);
+    var b = parseFloat(pointBInput.value);
+    var valid = player && !isNaN(a) && !isNaN(b) && b > a && a >= 0;
+    loopToggleBtn.disabled = !valid;
+    if (!valid && isLooping) stopLoop();
+  }
+
+  clearABBtn.addEventListener('click', function () {
+    pointAInput.value = '';
+    pointBInput.value = '';
+    stopLoop();
+    updateLoopAvailability();
+  });
+
+  loopToggleBtn.addEventListener('click', function () {
+    if (isLooping) {
+      stopLoop();
+    } else {
+      startLoop();
+    }
+  });
+
+  function startLoop() {
+    var a = parseFloat(pointAInput.value);
+    isLooping = true;
+    loopToggleBtn.textContent = t('loopStop');
+    statLoop.textContent = t('loopStatusOn', { a: pointAInput.value, b: pointBInput.value });
+    player.seekTo(a, true);
+    player.playVideo();
+  }
+
+  function stopLoop() {
+    isLooping = false;
+    loopToggleBtn.textContent = t('loopStart');
+    statLoop.textContent = t('mirrorOff');
+  }
+
+  // ---------- 輪詢狀態 (時間顯示 + 迴圈判斷) ----------
+  function startPolling() {
+    if (pollHandle) clearInterval(pollHandle);
+    pollHandle = setInterval(function () {
+      if (!player || typeof player.getCurrentTime !== 'function') return;
+      var curTime = player.getCurrentTime();
+      statCurrent.textContent = curTime.toFixed(1) + 's';
+      statRate.textContent = player.getPlaybackRate() + 'x';
+
+      if (isLooping) {
+        var b = parseFloat(pointBInput.value);
+        var a = parseFloat(pointAInput.value);
+        if (curTime >= b) {
+          player.seekTo(a, true);
+        }
+      }
+    }, 200);
+  }
+
+  // ---------- 鏡像 ----------
+  var mirrored = false;
+  mirrorSwitch.addEventListener('click', function () {
+    mirrored = !mirrored;
+    playerStage.classList.toggle('mirrored', mirrored);
+    mirrorSwitch.classList.toggle('on', mirrored);
+    mirrorLabel.textContent = t(mirrored ? 'mirrorOn' : 'mirrorOff');
+  });
+
+  // ---------- 初始化 ----------
+  buildRateButtons(); // 一開始就把固定速度按鍵畫出來,不用等載入影片
+  applyLanguage(currentLang);
+</script>
+</body>
+</html>
