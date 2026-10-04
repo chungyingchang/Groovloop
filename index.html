@@ -37,6 +37,22 @@
     right: 16px;
     z-index: 20;
   }
+  .visit-counter {
+    position: fixed;
+    bottom: 14px;
+    left: 14px;
+    z-index: 20;
+    background: #1c1c28;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 999px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.35);
+  }
+  .visit-counter b {
+    color: var(--text);
+  }
   .lang-toggle-btn {
     background: #1c1c28;
     border: 1px solid var(--border);
@@ -370,6 +386,9 @@
         <button type="button" data-lang="ko">한국어</button>
       </div>
     </div>
+    <div class="visit-counter" id="visitCounter">
+      <span data-i18n="visitCountLabel">瀏覽次數:</span> <b id="visitCountValue">--</b>
+    </div>
     <h1>Groovloop</h1>
     <p data-i18n="subtitle">貼上 YouTube 連結,練你的 cover dance —— 變速 / AB 迴圈 / 鏡像</p>
   </header>
@@ -484,6 +503,9 @@
     },
     sourceLabel: {
       'zh-Hant': '來源:', 'zh-Hans': '来源:', 'en': 'Source:', 'ja': 'ソース:', 'ko': '소스:'
+    },
+    visitCountLabel: {
+      'zh-Hant': '瀏覽次數:', 'zh-Hans': '浏览次数:', 'en': 'Visits:', 'ja': '訪問数:', 'ko': '방문 수:'
     },
     placeholderText: {
       'zh-Hant': '尚未載入影片',
@@ -1220,6 +1242,23 @@
     mirrorSwitch.classList.toggle('on', mirrored);
     mirrorLabel.textContent = t(mirrored ? 'mirrorOn' : 'mirrorOff');
   });
+
+  // ---------- 瀏覽次數計數 ----------
+  (function () {
+    var el = document.getElementById('visitCountValue');
+    if (!el) return;
+    fetch('https://abacus.jasoncameron.dev/hit/groovloop-chungying/visits')
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data && typeof data.value === 'number') {
+          el.textContent = data.value.toLocaleString();
+        }
+      })
+      .catch(function () {
+        var counter = document.getElementById('visitCounter');
+        if (counter) counter.style.display = 'none';
+      });
+  })();
 
   // ---------- 初始化 ----------
   buildRateButtons(); // 一開始就把固定速度按鍵畫出來,不用等載入影片
