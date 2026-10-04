@@ -842,11 +842,11 @@
     }
   }
 
-  // ---------- 解析 Instagram 連結取得 shortcode ----------
+  // ---------- 解析 Instagram 連結取得類型(reel/p/tv)與 shortcode ----------
   function extractInstagramShortcode(url) {
     try {
-      var m = url.match(/instagram\.com\/(?:reel|p|tv)\/([a-zA-Z0-9_-]+)/);
-      return m ? m[1] : null;
+      var m = url.match(/instagram\.com\/(reel|p|tv)\/([a-zA-Z0-9_-]+)/);
+      return m ? { type: m[1], shortcode: m[2] } : null;
     } catch (e) {
       return null;
     }
@@ -899,14 +899,14 @@
     var source = detectSource(raw);
 
     if (source === 'instagram') {
-      var shortcode = extractInstagramShortcode(raw);
-      if (!shortcode) {
+      var igInfo = extractInstagramShortcode(raw);
+      if (!igInfo) {
         setUrlHint('errInvalidInstagram');
         urlHint.style.color = '#ff6b6b';
         return;
       }
       resetForNewLoad();
-      loadInstagramVideo(shortcode);
+      loadInstagramVideo(igInfo.type, igInfo.shortcode);
       return;
     }
 
@@ -966,7 +966,7 @@
     }
   }
 
-  function loadInstagramVideo(shortcode) {
+  function loadInstagramVideo(type, shortcode) {
     showSourceTag('instagram');
     setCapabilities({
       rate: false,
@@ -989,7 +989,7 @@
     statCurrent.textContent = '--';
     statRate.textContent = '--';
 
-    var permalink = 'https://www.instagram.com/reel/' + shortcode + '/';
+    var permalink = 'https://www.instagram.com/' + type + '/' + shortcode + '/';
 
     // 官方 blockquote 格式(跟你在 IG 貼文點「嵌入」拿到的程式碼同一套),
     // 交給 embed.js 去渲染成真正的播放卡片。
