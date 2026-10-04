@@ -689,13 +689,13 @@
       var saved = localStorage.getItem('groovloop_lang');
       if (saved && SUPPORTED_LANGS.indexOf(saved) !== -1) return saved;
     } catch (e) {}
-    var nav = (navigator.language || 'zh-Hant');
+    var nav = (navigator.language || 'en');
     if (/^zh-(TW|HK|MO|Hant)/i.test(nav)) return 'zh-Hant';
     if (/^zh/i.test(nav)) return 'zh-Hans';
     if (/^ja/i.test(nav)) return 'ja';
     if (/^ko/i.test(nav)) return 'ko';
     if (/^en/i.test(nav)) return 'en';
-    return 'zh-Hant';
+    return 'en';
   })();
 
   function t(key, params) {
